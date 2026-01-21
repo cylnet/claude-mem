@@ -16,6 +16,8 @@ import { parseObservations, parseSummary, type ParsedObservation, type ParsedSum
 import { updateCursorContextForProject } from '../../integrations/CursorHooksInstaller.js';
 import { updateFolderClaudeMdFiles } from '../../../utils/claude-md-utils.js';
 import { getWorkerPort } from '../../../shared/worker-utils.js';
+import { USER_SETTINGS_PATH } from '../../../shared/paths.js';
+import { SettingsDefaultsManager } from '../../../shared/SettingsDefaultsManager.js';
 import type { ActiveSession } from '../../worker-types.js';
 import type { DatabaseManager } from '../DatabaseManager.js';
 import type { SessionManager } from '../SessionManager.js';
@@ -222,14 +224,18 @@ async function syncAndBroadcastObservations(
   }
 
   if (allFilePaths.length > 0) {
-    updateFolderClaudeMdFiles(
-      allFilePaths,
-      session.project,
-      getWorkerPort(),
-      projectRoot
-    ).catch(error => {
-      logger.warn('FOLDER_INDEX', 'CLAUDE.md update failed (non-critical)', { project: session.project }, error as Error);
-    });
+    // Check if folder CLAUDE.md feature is enabled (disabled by default)
+    const settings = SettingsDefaultsManager.loadFromFile(USER_SETTINGS_PATH);
+    if (settings.CLAUDE_MEM_FOLDER_CLAUDEMD_ENABLED === 'true') {
+      updateFolderClaudeMdFiles(
+        allFilePaths,
+        session.project,
+        getWorkerPort(),
+        projectRoot
+      ).catch(error => {
+        logger.warn('FOLDER_INDEX', 'CLAUDE.md update failed (non-critical)', { project: session.project }, error as Error);
+      });
+    }
   }
 }
 
